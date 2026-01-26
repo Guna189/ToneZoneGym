@@ -12,6 +12,35 @@ st.set_page_config(
 
 st.title("🏋️ Gym Management Dashboard")
 
+st.markdown("""
+<style>
+.kpi-box {
+    text-align: center;
+    padding: 20px;
+    border-radius: 12px;
+    background-color: #f7f9fc;
+}
+.kpi-title {
+    font-size: 18px;
+    color: #555;
+}
+.kpi-value {
+    font-size: 42px;
+    font-weight: bold;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------- UTILITIES ----------------------
+def kpi(title, value):
+    st.markdown(f"""
+    <div class="kpi-box">
+        <div class="kpi-title">{title}</div>
+        <div class="kpi-value">{value}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
 # ---------------- GOOGLE SHEET INPUT ----------------
 sheet_id = st.text_input(
     "📄 Enter Google Sheet ID",
@@ -84,13 +113,28 @@ if menu == "Dashboard":
     expiring_soon_count = len(expiring_soon)
 
     # KPI Cards
-    c1, c2, c3, c4, c5 = st.columns(5)
+    # -------- Row 1 (3 KPIs) --------
+    r1c1, r1c2, r1c3 = st.columns(3)
 
-    c1.metric("💰 This Month Earnings", f"₹ {this_month_earnings}")
-    c2.metric("🆕 New Users (This Month)", new_users_this_month)
-    c3.metric("👥 Total Users", total_users)
-    c4.metric("❌ Expired Users", expired_count)
-    c5.metric("⏳ Expiring in 15 Days", expiring_soon_count)
+    with r1c1:
+        kpi("💰 This Month Earnings", f"₹ {this_month_earnings}")
+
+    with r1c2:
+        kpi("🆕 New Users (This Month)", new_users_this_month)
+
+    with r1c3:
+        kpi("👥 Total Users", total_users)
+
+
+    # -------- Row 2 (Centered 2 KPIs) --------
+    empty1, r2c1, r2c2, empty2 = st.columns([1,2,2,1])
+
+    with r2c1:
+        kpi("❌ Expired Users", expired_count)
+
+    with r2c2:
+        kpi("⏳ Expiring in 15 Days", expiring_soon_count)
+
 
     # Optional charts
     st.subheader("📈 Monthly Earnings")
@@ -101,16 +145,23 @@ if menu == "Dashboard":
     )
     earnings["join_date"] = earnings["join_date"].astype(str)
 
-    fig = px.bar(
-        earnings,
-        x="join_date",
-        y="amount_paid",
-        labels={"join_date": "Month", "amount_paid": "Earnings"},
+    fig = px.line(
+    earnings,
+    x="join_date",
+    y="amount_paid",
+    markers=True,
+    labels={"join_date": "Month", "amount_paid": "Earnings"},
     )
+
+
     st.plotly_chart(fig, use_container_width=True)
+
+    st.subheader("❌ Expired Users")
+    st.dataframe(expired_users, use_container_width=True)
 
     st.subheader("⏳ Users Expiring in Next 15 Days")
     st.dataframe(expiring_soon, use_container_width=True)
+
 
 # if menu == "Dashboard":
 #     st.subheader("📊 Overview")
