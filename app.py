@@ -5,31 +5,12 @@ import plotly.express as px
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Gym Management Dashboard",
+    page_title="Tone Zone Gym Management Dashboard",
     page_icon="🏋️",
     layout="wide"
 )
 
 st.title("🏋️ Gym Management Dashboard")
-
-st.markdown("""
-<style>
-.kpi-box {
-    text-align: center;
-    padding: 20px;
-    border-radius: 12px;
-    background-color: #f7f9fc;
-}
-.kpi-title {
-    font-size: 18px;
-    color: #555;
-}
-.kpi-value {
-    font-size: 42px;
-    font-weight: bold;
-}
-</style>
-""", unsafe_allow_html=True)
 
 # ---------------- UTILITIES ----------------------
 def kpi(title, value):
@@ -66,6 +47,13 @@ def load_data(url):
         df["expiry_date"],
         dayfirst=True,
         errors="coerce")
+    
+    df["amount_paid"] = (
+        df["amount_paid"]
+        .astype(str)
+        .str.replace(",", "")
+        .astype(float)
+    )
 
     return df
 
@@ -113,28 +101,16 @@ if menu == "Dashboard":
     expiring_soon_count = len(expiring_soon)
 
     # KPI Cards
-    # -------- Row 1 (3 KPIs) --------
-    r1c1, r1c2, r1c3 = st.columns(3)
+    # -------- KPIs Row 1 --------
+    c1, c2, c3 = st.columns([2,2,2])
+    c1.metric("💰 This Month Earnings", f"₹ {this_month_earnings}")
+    c2.metric("🆕 New Users (This Month)", new_users_this_month)
+    c3.metric("👥 Total Users", total_users)
 
-    with r1c1:
-        kpi("💰 This Month Earnings", f"₹ {this_month_earnings}")
-
-    with r1c2:
-        kpi("🆕 New Users (This Month)", new_users_this_month)
-
-    with r1c3:
-        kpi("👥 Total Users", total_users)
-
-
-    # -------- Row 2 (Centered 2 KPIs) --------
-    empty1, r2c1, r2c2, empty2 = st.columns([1,2,2,1])
-
-    with r2c1:
-        kpi("❌ Expired Users", expired_count)
-
-    with r2c2:
-        kpi("⏳ Expiring in 15 Days", expiring_soon_count)
-
+    # -------- KPIs Row 2 --------
+    e1, c4, c5, e2 = st.columns([1,2,2,1])
+    c4.metric("❌ Expired Users", expired_count)
+    c5.metric("⏳ Expiring in 15 Days", expiring_soon_count)
 
     # Optional charts
     st.subheader("📈 Monthly Earnings")
@@ -236,7 +212,19 @@ elif menu == "Earnings (Date Range)":
 elif menu == "Pending / Expired Users":
     st.subheader("⏰ Pending / Expired Memberships")
 
-    expired = df[df["expiry_date"] < today]
+    col1, col2 = st.columns(2)
+    with col1:
+        from_date = st.date_input("Show users expired after")
+    with col2:
+        to_date = st.date_input("Till date", value=datetime.today())
+
+    from_date = pd.to_datetime(from_date)
+    to_date = pd.to_datetime(to_date)
+
+    expired = df[
+        (df["expiry_date"] >= from_date) &
+        (df["expiry_date"] <= to_date)
+    ]
 
     st.write(f"### Expired Users ({len(expired)})")
     st.dataframe(expired, use_container_width=True)
