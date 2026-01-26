@@ -57,19 +57,42 @@ menu = st.sidebar.radio(
 
 # ---------------- DASHBOARD ----------------
 if menu == "Dashboard":
-    st.subheader("📊 Overview")
+    st.subheader("📊 Gym Overview")
 
+    today = pd.to_datetime(datetime.today().date())
+    current_month = today.month
+    current_year = today.year
+
+    # Filters
+    this_month_df = df[
+        (df["join_date"].dt.month == current_month) &
+        (df["join_date"].dt.year == current_year)
+    ]
+
+    this_month_earnings = this_month_df["amount_paid"].sum()
+    new_users_this_month = len(this_month_df)
     total_users = len(df)
-    active_users = df[df["expiry_date"] >= today].shape[0]
-    expired_users = df[df["expiry_date"] < today].shape[0]
-    total_revenue = df["amount_paid"].sum()
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total Users", total_users)
-    c2.metric("Active Users", active_users)
-    c3.metric("Expired Users", expired_users)
-    c4.metric("Total Revenue", f"₹ {total_revenue}")
+    expired_users = df[df["expiry_date"] < today]
+    expired_count = len(expired_users)
 
+    next_15_days = today + pd.Timedelta(days=15)
+    expiring_soon = df[
+        (df["expiry_date"] >= today) &
+        (df["expiry_date"] <= next_15_days)
+    ]
+    expiring_soon_count = len(expiring_soon)
+
+    # KPI Cards
+    c1, c2, c3, c4, c5 = st.columns(5)
+
+    c1.metric("💰 This Month Earnings", f"₹ {this_month_earnings}")
+    c2.metric("🆕 New Users (This Month)", new_users_this_month)
+    c3.metric("👥 Total Users", total_users)
+    c4.metric("❌ Expired Users", expired_count)
+    c5.metric("⏳ Expiring in 15 Days", expiring_soon_count)
+
+    # Optional charts
     st.subheader("📈 Monthly Earnings")
     earnings = (
         df.groupby(df["join_date"].dt.to_period("M"))["amount_paid"]
@@ -85,6 +108,39 @@ if menu == "Dashboard":
         labels={"join_date": "Month", "amount_paid": "Earnings"},
     )
     st.plotly_chart(fig, use_container_width=True)
+
+    st.subheader("⏳ Users Expiring in Next 15 Days")
+    st.dataframe(expiring_soon, use_container_width=True)
+
+# if menu == "Dashboard":
+#     st.subheader("📊 Overview")
+
+#     total_users = len(df)
+#     active_users = df[df["expiry_date"] >= today].shape[0]
+#     expired_users = df[df["expiry_date"] < today].shape[0]
+#     total_revenue = df["amount_paid"].sum()
+
+#     c1, c2, c3, c4 = st.columns(4)
+#     c1.metric("Total Users", total_users)
+#     c2.metric("Active Users", active_users)
+#     c3.metric("Expired Users", expired_users)
+#     c4.metric("Total Revenue", f"₹ {total_revenue}")
+
+#     st.subheader("📈 Monthly Earnings")
+#     earnings = (
+#         df.groupby(df["join_date"].dt.to_period("M"))["amount_paid"]
+#         .sum()
+#         .reset_index()
+#     )
+#     earnings["join_date"] = earnings["join_date"].astype(str)
+
+#     fig = px.bar(
+#         earnings,
+#         x="join_date",
+#         y="amount_paid",
+#         labels={"join_date": "Month", "amount_paid": "Earnings"},
+#     )
+#     st.plotly_chart(fig, use_container_width=True)
 
 # ---------------- SEARCH USER ----------------
 elif menu == "Search User":
