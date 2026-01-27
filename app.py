@@ -35,7 +35,7 @@ if not sheet_id:
 csv_url = f"https://docs.google.com/spreadsheets/d/1lcUKNcagCEom59UQ9gGahuJVWOpXLb3NqmPIaATJ4sc/export?format=csv"
 
 # ---------------- LOAD DATA ----------------
-@st.cache_data
+@st.cache_data(ttl=300)
 def load_data(url):
     df = pd.read_csv(url)
     df["join_date"] = pd.to_datetime(
